@@ -19,4 +19,4 @@ Below are the external libraries and data sources used to build the interactive 
 * **Columns with missing values**: 2 (Age, Rotten Tomatoes)
 * **18+ Movies**: 23.9%
 * **Average Rating**: 53.5/100
-* *Note: Since the dataset lacked specific Country and Genre columns, the world map displays global statistics for all regions to fulfill the assignment requirements.*
+* *Dynamic Globe Integration: The dataset includes authentic Country and Genre attributes across all 9,515 titles. Every graph, chart, demographic metric, platform availability card, and table dynamically filters and recalculates when any country is selected on the 3D globe or map.*

@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Movies Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/globe.gl"></script>
+    <script src="missing_data.js"></script>
+    <script src="movies_data.js"></script>
     <style>
         #map { height: 500px; width: 100%; border-radius: 0.5rem; z-index: 1; }
         .tag { display: inline-block; padding: 0.35rem 0.85rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 600; margin: 0.25rem; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
@@ -29,17 +30,722 @@
             <h1 class="text-3xl font-bold text-gray-800 tracking-tight">Streaming Platforms Dashboard</h1>
         </div>
         
-        <!-- Dashboard Top: Missing Values -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-red-500">
-                <h2 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1">Rows with Missing Values</h2>
-                <p class="text-4xl font-extrabold text-red-600">4,177</p>
-                <p class="text-sm text-gray-400 mt-2">Out of 9,515 total rows</p>
+                <!-- Dashboard Top: Missing Values Button & Upgraded Report -->
+        <div class="mb-8">
+            <div class="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Data Quality & Cleaning Center
+                    </h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Comprehensive audit of 9,515 movie titles across 11 attributes in streaming platforms dataset.</p>
+                </div>
+                <button id="missing-values-btn" onclick="toggleMissingReport()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-xl font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-3 cursor-pointer border border-indigo-500 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm1 4a1 1 0 00-1 1v7a2 2 0 002 2h10a2 2 0 002-2V9a1 1 0 00-1-1H4zm3 3a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    <span>View Data Cleaning and Missing Values Report</span>
+                    <span id="badge-missing-count" class="bg-red-500 text-white text-xs px-2.5 py-0.5 rounded-full font-bold shadow-sm">4,184 Missing Cells</span>
+                </button>
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-orange-500">
-                <h2 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1">Columns with Missing Values</h2>
-                <p class="text-4xl font-extrabold text-orange-600">2</p>
-                <p class="text-sm text-gray-400 mt-2">Age (4,177 missing) & Rotten Tomatoes (7 missing)</p>
+
+            <!-- Upgraded Comprehensive Missing Values Report -->
+            <div id="missing-values-report" class="hidden mt-6 p-6 md:p-8 bg-white border border-gray-200 rounded-2xl shadow-xl transition-all duration-300">
+                
+                <!-- Report Header & Actions -->
+                <div class="flex flex-wrap justify-between items-start border-b border-gray-100 pb-5 mb-8 gap-4">
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <span class="bg-indigo-100 text-indigo-700 text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider">DAV Project Audit</span>
+                            <span class="text-xs text-gray-400">Dataset: MoviesOnStreamingPlatforms (4) 5.15.07 PM.csv</span>
+                        </div>
+                        <h3 class="text-2xl md:text-3xl font-extrabold text-gray-900 mt-2">Data Cleaning & Missing Values Analysis Report</h3>
+                        <p class="text-sm text-gray-500 mt-1">Interactive diagnostics, patterns, row/column inspections, and executable imputation preview for 9,515 titles.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="toggleMissingReport()" class="text-gray-400 hover:text-gray-600 bg-gray-100 hover:bg-gray-200 p-2 rounded-lg transition-all" title="Close Report">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Section Navigation Pills -->
+                <div class="flex flex-wrap gap-2 mb-8 bg-gray-50 p-2.5 rounded-xl border border-gray-200 text-xs font-semibold">
+                    <a href="#section-1" class="px-3 py-1.5 rounded-lg bg-white shadow-xs text-indigo-700 hover:bg-indigo-50 border border-gray-200">1. Summary Dashboard</a>
+                    <a href="#section-2" class="px-3 py-1.5 rounded-lg bg-white shadow-xs text-gray-700 hover:bg-indigo-50 border border-gray-200">2. Deep-Dive Patterns</a>
+                    <a href="#section-3" class="px-3 py-1.5 rounded-lg bg-white shadow-xs text-gray-700 hover:bg-indigo-50 border border-gray-200">3. Real Examples</a>
+                    <a href="#section-4" class="px-3 py-1.5 rounded-lg bg-white shadow-xs text-gray-700 hover:bg-indigo-50 border border-gray-200">4. Row-wise Details</a>
+                    <a href="#section-5" class="px-3 py-1.5 rounded-lg bg-white shadow-xs text-gray-700 hover:bg-indigo-50 border border-gray-200">5. Column-wise Details</a>
+                    <a href="#section-6" class="px-3 py-1.5 rounded-lg bg-white shadow-xs text-gray-700 hover:bg-indigo-50 border border-gray-200">6. Cleaning Methods</a>
+                    <a href="#section-7" class="px-3 py-1.5 rounded-lg bg-white shadow-xs text-gray-700 hover:bg-indigo-50 border border-gray-200">7. Before & After Preview</a>
+                    <a href="#section-8" class="px-3 py-1.5 rounded-lg bg-white shadow-xs text-gray-700 hover:bg-indigo-50 border border-gray-200">8. Cleaning Actions</a>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- 1. MISSING DATA SUMMARY (Preserved & Enhanced) -->
+                <!-- ========================================== -->
+                <div id="section-1" class="mb-10 pt-2">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center font-bold">1</span>
+                            MISSING DATA SUMMARY
+                        </h4>
+                        <span class="text-xs text-gray-500 font-medium">Dynamically calculated from loaded dataset</span>
+                    </div>
+
+                    <!-- Metric Cards Grid -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+                        <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-2xs">
+                            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Total Dataset Shape</p>
+                            <p class="text-2xl font-black text-gray-900">9,515 <span class="text-sm font-semibold text-gray-500">× 11</span></p>
+                            <p class="text-xs text-gray-500 mt-1">104,665 total cells</p>
+                        </div>
+                        <div class="bg-red-50 p-4 rounded-xl border border-red-200 shadow-2xs">
+                            <p class="text-xs font-bold text-red-800 uppercase tracking-wider mb-1">Total Missing Cells</p>
+                            <p id="kpi-missing-cells" class="text-2xl font-black text-red-600">4,184</p>
+                            <p class="text-xs text-red-600 mt-1">4.00% overall missingness</p>
+                        </div>
+                        <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 shadow-2xs">
+                            <p class="text-xs font-bold text-amber-800 uppercase tracking-wider mb-1">Affected Rows</p>
+                            <p id="kpi-affected-rows" class="text-2xl font-black text-amber-600">4,177</p>
+                            <p class="text-xs text-amber-700 mt-1">43.90% of all movie rows</p>
+                        </div>
+                        <div class="bg-orange-50 p-4 rounded-xl border border-orange-200 shadow-2xs">
+                            <p class="text-xs font-bold text-orange-800 uppercase tracking-wider mb-1">Affected Columns</p>
+                            <p class="text-2xl font-black text-orange-600">2 <span class="text-sm font-normal text-orange-800">/ 11</span></p>
+                            <p class="text-xs text-orange-700 mt-1">Age (4,177) & RT (7)</p>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-xl border border-green-200 shadow-2xs">
+                            <p class="text-xs font-bold text-green-800 uppercase tracking-wider mb-1">Complete Columns</p>
+                            <p class="text-2xl font-black text-green-600">9 <span class="text-sm font-normal text-green-800">/ 11</span></p>
+                            <p class="text-xs text-green-700 mt-1">Title, Year, Platforms, etc.</p>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-200 shadow-2xs">
+                            <p class="text-xs font-bold text-blue-800 uppercase tracking-wider mb-1">Cleaning Progress</p>
+                            <p id="kpi-cleaning-status" class="text-2xl font-black text-blue-600">0%</p>
+                            <p id="kpi-cleaning-sub" class="text-xs text-blue-700 mt-1">4,184 Pending fixes</p>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Progress Bar -->
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6">
+                        <div class="flex justify-between items-center text-xs mb-2">
+                            <span class="font-bold text-gray-700">Dataset Normalization Progress:</span>
+                            <span id="progress-bar-text" class="font-mono font-bold text-indigo-700">0 / 4,184 Cells Cleaned (0%)</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                            <div id="progress-bar-fill" class="bg-indigo-600 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================================== -->
+                <!-- 2. DEEP-DIVE: MISSING DATA PATTERNS & EXAMPLES (Preserved & Enhanced) -->
+                <!-- ============================================================== -->
+                <div id="section-2" class="mb-10 pt-2">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center font-bold">2</span>
+                            DEEP-DIVE: MISSING DATA PATTERNS & EXAMPLES
+                        </h4>
+                        <span class="text-xs text-indigo-600 font-semibold bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-100">Multi-Dimensional Analysis</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <!-- Missing by Platform -->
+                        <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                            <h5 class="font-bold text-gray-900 border-b border-gray-100 pb-2 mb-3 flex items-center justify-between">
+                                <span>Missingness by Platform</span>
+                                <span class="text-xs text-gray-400 font-normal">Catalog Impact</span>
+                            </h5>
+                            <p class="text-xs text-gray-500 mb-4">Prime Video & Netflix account for 89.5% of all missing entries due to large indie and international library volume.</p>
+                            
+                            <div class="space-y-3.5">
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span class="font-bold text-blue-900 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span>Prime Video</span>
+                                        <span class="font-mono font-semibold text-gray-700">1,948 / 4,113 (47.4%)</span>
+                                    </div>
+                                    <div class="w-full bg-gray-100 rounded-full h-2.5"><div class="bg-blue-600 h-2.5 rounded-full" style="width: 47.4%"></div></div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span class="font-bold text-red-900 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span>Netflix</span>
+                                        <span class="font-mono font-semibold text-gray-700">1,797 / 3,695 (48.6%)</span>
+                                    </div>
+                                    <div class="w-full bg-gray-100 rounded-full h-2.5"><div class="bg-red-600 h-2.5 rounded-full" style="width: 48.6%"></div></div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span class="font-bold text-green-900 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span>Hulu</span>
+                                        <span class="font-mono font-semibold text-gray-700">329 / 1,047 (31.4%)</span>
+                                    </div>
+                                    <div class="w-full bg-gray-100 rounded-full h-2.5"><div class="bg-green-600 h-2.5 rounded-full" style="width: 31.4%"></div></div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span class="font-bold text-indigo-900 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block"></span>Disney+</span>
+                                        <span class="font-mono font-semibold text-gray-700">197 / 922 (21.4%)</span>
+                                    </div>
+                                    <div class="w-full bg-gray-100 rounded-full h-2.5"><div class="bg-indigo-600 h-2.5 rounded-full" style="width: 21.4%"></div></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Historical Era Pattern -->
+                        <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                            <h5 class="font-bold text-gray-900 border-b border-gray-100 pb-2 mb-3 flex items-center justify-between">
+                                <span>Historical Era / Decade Pattern</span>
+                                <span class="text-xs text-gray-400 font-normal">Release Era</span>
+                            </h5>
+                            <p class="text-xs text-gray-500 mb-3">Pre-1970 titles show >75% missing ratings because the MPAA certification standard was only instituted in 1968.</p>
+                            <div class="space-y-2 text-xs">
+                                <div class="flex justify-between p-2 bg-red-50/60 rounded border border-red-100">
+                                    <span class="font-bold text-red-900">1910s–1950s (Golden Age):</span>
+                                    <span class="font-mono font-bold text-red-700">440 / 524 (84.0% Missing)</span>
+                                </div>
+                                <div class="flex justify-between p-2 bg-yellow-50/60 rounded border border-yellow-100">
+                                    <span class="font-bold text-yellow-900">1960s–1990s (Modern MPAA):</span>
+                                    <span class="font-mono font-bold text-yellow-700">299 / 1,144 (26.1% Missing)</span>
+                                </div>
+                                <div class="flex justify-between p-2 bg-blue-50/60 rounded border border-blue-100">
+                                    <span class="font-bold text-blue-900">2000s–2020s (Digital Era):</span>
+                                    <span class="font-mono font-bold text-blue-700">3,438 / 7,842 (43.8% Missing)</span>
+                                </div>
+                            </div>
+                            <p class="text-2xs text-gray-400 italic mt-3">*2010s explosion is driven by direct-to-streaming unrated releases.</p>
+                        </div>
+
+                        <!-- Co-Occurrence Pattern -->
+                        <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                            <h5 class="font-bold text-gray-900 border-b border-gray-100 pb-2 mb-3 flex items-center justify-between">
+                                <span>Co-occurrence Matrix</span>
+                                <span class="text-xs text-gray-400 font-normal">Cross-Column Overlap</span>
+                            </h5>
+                            <p class="text-xs text-gray-500 mb-3">Analysis of whether missing values in Age and Rotten Tomatoes occur independently or together.</p>
+                            
+                            <div class="space-y-2.5 text-xs">
+                                <div class="p-3 bg-indigo-50/80 rounded-lg border border-indigo-100">
+                                    <div class="flex justify-between font-bold text-indigo-900">
+                                        <span>Missing ONLY 'Age':</span>
+                                        <span class="font-mono">4,170 rows (99.8%)</span>
+                                    </div>
+                                    <p class="text-2xs text-indigo-700 mt-1">Critic rating exists, but platform omitted maturity rating.</p>
+                                </div>
+                                <div class="p-3 bg-red-50/80 rounded-lg border border-red-100">
+                                    <div class="flex justify-between font-bold text-red-900">
+                                        <span>Missing BOTH 'Age' & 'RT':</span>
+                                        <span class="font-mono">7 rows (100% of RT)</span>
+                                    </div>
+                                    <p class="text-2xs text-red-700 mt-1">100% of movies missing Rotten Tomatoes also miss Age.</p>
+                                </div>
+                                <div class="p-3 bg-green-50/80 rounded-lg border border-green-100">
+                                    <div class="flex justify-between font-bold text-green-900">
+                                        <span>Missing ONLY 'RT':</span>
+                                        <span class="font-mono">0 rows (0.0%)</span>
+                                    </div>
+                                    <p class="text-2xs text-green-700 mt-1">No movies have an Age rating while lacking Rotten Tomatoes.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ======================================================= -->
+                <!-- 3. Real Examples from the Dataset (Preserved & Enhanced) -->
+                <!-- ======================================================= -->
+                <div id="section-3" class="mb-10 pt-2">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center font-bold">3</span>
+                            Real Examples from the Dataset
+                        </h4>
+                        <span class="text-xs text-gray-500 font-medium">Exact movie records showing original missingness vs proposed fix</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                        <!-- Example 1 -->
+                        <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="bg-red-100 text-red-800 text-2xs font-bold px-2 py-0.5 rounded">Missing: Age</span>
+                                <span class="text-2xs font-mono text-gray-500">ID: 15 | Netflix</span>
+                            </div>
+                            <h5 class="font-bold text-gray-900 text-sm">On Body and Soul (2017)</h5>
+                            <p class="text-xs text-gray-500 mt-1">International Hungarian arthouse drama. Academy Award nominee.</p>
+                            <div class="mt-3 pt-2 border-t border-gray-200 text-xs">
+                                <div class="flex justify-between mb-1"><span class="text-gray-500">Original:</span> <span class="font-mono text-red-600 line-through">— (Empty)</span></div>
+                                <div class="flex justify-between"><span class="text-gray-500">Recommended:</span> <span class="font-mono font-bold text-green-600">"Not Rated"</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Example 2 -->
+                        <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="bg-red-100 text-red-800 text-2xs font-bold px-2 py-0.5 rounded">Missing: Age</span>
+                                <span class="text-2xs font-mono text-gray-500">ID: 52 | Netflix</span>
+                            </div>
+                            <h5 class="font-bold text-gray-900 text-sm">Special 26 (2013)</h5>
+                            <p class="text-xs text-gray-500 mt-1">Bollywood heist thriller. Rated U/A by CBFC India, blank on Netflix API.</p>
+                            <div class="mt-3 pt-2 border-t border-gray-200 text-xs">
+                                <div class="flex justify-between mb-1"><span class="text-gray-500">Original:</span> <span class="font-mono text-red-600 line-through">— (Empty)</span></div>
+                                <div class="flex justify-between"><span class="text-gray-500">Recommended:</span> <span class="font-mono font-bold text-green-600">"Not Rated"</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Example 3 -->
+                        <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="bg-red-100 text-red-800 text-2xs font-bold px-2 py-0.5 rounded">Missing: Age</span>
+                                <span class="text-2xs font-mono text-gray-500">ID: 104 | Netflix</span>
+                            </div>
+                            <h5 class="font-bold text-gray-900 text-sm">Chasing Coral (2017)</h5>
+                            <p class="text-xs text-gray-500 mt-1">Emmy-winning environmental nature documentary.</p>
+                            <div class="mt-3 pt-2 border-t border-gray-200 text-xs">
+                                <div class="flex justify-between mb-1"><span class="text-gray-500">Original:</span> <span class="font-mono text-red-600 line-through">— (Empty)</span></div>
+                                <div class="flex justify-between"><span class="text-gray-500">Recommended:</span> <span class="font-mono font-bold text-green-600">"Not Rated"</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Example 4 -->
+                        <div class="bg-red-50/70 p-4 rounded-xl border border-red-200">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="bg-red-200 text-red-900 text-2xs font-bold px-2 py-0.5 rounded">Dual Missing: Age & RT</span>
+                                <span class="text-2xs font-mono text-gray-500">ID: 3689 | Line 3690</span>
+                            </div>
+                            <h5 class="font-bold text-gray-900 text-sm">Amit Tandon: Family Tandoncies (2019)</h5>
+                            <p class="text-xs text-gray-500 mt-1">Niche stand-up comedy special with no critic review consensus.</p>
+                            <div class="mt-3 pt-2 border-t border-red-200 text-xs">
+                                <div class="flex justify-between mb-1"><span class="text-gray-500">Age Fix:</span> <span class="font-mono font-bold text-green-700">"Not Rated"</span></div>
+                                <div class="flex justify-between"><span class="text-gray-500">RT Fix:</span> <span class="font-mono font-bold text-green-700">"52/100" (Median)</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Example 5 -->
+                        <div class="bg-red-50/70 p-4 rounded-xl border border-red-200">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="bg-red-200 text-red-900 text-2xs font-bold px-2 py-0.5 rounded">Dual Missing: Age & RT</span>
+                                <span class="text-2xs font-mono text-gray-500">ID: 3692 | Line 3693</span>
+                            </div>
+                            <h5 class="font-bold text-gray-900 text-sm">ChuChuTV Bedtime Stories (2019)</h5>
+                            <p class="text-xs text-gray-500 mt-1">Digital preschool animation rhymes package for young children.</p>
+                            <div class="mt-3 pt-2 border-t border-red-200 text-xs">
+                                <div class="flex justify-between mb-1"><span class="text-gray-500">Age Fix:</span> <span class="font-mono font-bold text-green-700">"all" / "Not Rated"</span></div>
+                                <div class="flex justify-between"><span class="text-gray-500">RT Fix:</span> <span class="font-mono font-bold text-green-700">"52/100" (Median)</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Example 6 -->
+                        <div class="bg-red-50/70 p-4 rounded-xl border border-red-200">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="bg-red-200 text-red-900 text-2xs font-bold px-2 py-0.5 rounded">Dual Missing: Age & RT</span>
+                                <span class="text-2xs font-mono text-gray-500">ID: 3694 | Line 3695</span>
+                            </div>
+                            <h5 class="font-bold text-gray-900 text-sm">Alias JJ, la celebridad del mal (2017)</h5>
+                            <p class="text-xs text-gray-500 mt-1">Colombian crime series adaptation with unindexed critic data.</p>
+                            <div class="mt-3 pt-2 border-t border-red-200 text-xs">
+                                <div class="flex justify-between mb-1"><span class="text-gray-500">Age Fix:</span> <span class="font-mono font-bold text-green-700">"Not Rated"</span></div>
+                                <div class="flex justify-between"><span class="text-gray-500">RT Fix:</span> <span class="font-mono font-bold text-green-700">"52/100" (Median)</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================== -->
+                <!-- 4. Row-wise Missing Data Details & Table      -->
+                <!-- ============================================== -->
+                <div id="section-4" class="mb-10 pt-2">
+                    <div class="flex flex-wrap items-center justify-between mb-4 gap-2">
+                        <div>
+                            <h4 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center font-bold">4</span>
+                                Row-wise Missing Data Details & Interactive Table
+                            </h4>
+                            <p class="text-xs text-gray-500 mt-1">
+                                Search, filter, and inspect missing data entries. 
+                                <span class="font-semibold text-indigo-700">Note on Indexing:</span> Human-readable <strong>Row Number</strong> reflects 1-based CSV line position (Header = Line 1, First Movie = Line 2), while <strong>DataFrame Index</strong> represents 0-based memory indexing.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Multi-Missing Rows Special Inspection Card -->
+                    <div class="bg-amber-50/80 border border-amber-200 rounded-xl p-4 mb-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <h5 class="text-xs font-bold text-amber-900 uppercase tracking-wide flex items-center gap-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                                Priority Focus: Rows Missing Multiple Cells (Age + Rotten Tomatoes)
+                            </h5>
+                            <span class="text-2xs bg-amber-200/80 text-amber-900 font-bold px-2 py-0.5 rounded">Exactly 7 Records Detected</span>
+                        </div>
+                        <p class="text-xs text-amber-800 mb-3">All 7 records missing Rotten Tomatoes also miss Age. Below are their exact CSV row positions, Record IDs, and complete row data:</p>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-xs text-left bg-white rounded-lg border border-amber-200">
+                                <thead class="bg-amber-100/60 text-amber-900 font-bold">
+                                    <tr>
+                                        <th class="p-2 border-b">Row # (CSV)</th>
+                                        <th class="p-2 border-b">DF Index</th>
+                                        <th class="p-2 border-b">Record ID</th>
+                                        <th class="p-2 border-b">Movie Title</th>
+                                        <th class="p-2 border-b">Year</th>
+                                        <th class="p-2 border-b">Missing Fields</th>
+                                        <th class="p-2 border-b">Original Row Summary</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-amber-100 text-gray-700">
+                                    <tr><td class="p-2 font-mono font-bold text-amber-900">3,690</td><td class="p-2 font-mono">3,688</td><td class="p-2 font-mono">3689</td><td class="p-2 font-semibold">Amit Tandon: Family Tandoncies</td><td class="p-2">2019</td><td class="p-2"><span class="bg-red-100 text-red-800 px-1.5 py-0.5 rounded font-bold">Age</span> <span class="bg-red-100 text-red-800 px-1.5 py-0.5 rounded font-bold">RT</span></td><td class="p-2 text-2xs text-gray-500 font-mono">Netflix:1 | Hulu:0 | Prime:0 | Disney:0</td></tr>
+                                    <tr><td class="p-2 font-mono font-bold text-amber-900">3,691</td><td class="p-2 font-mono">3,689</td><td class="p-2 font-mono">3690</td><td class="p-2 font-semibold">Wave of Cinema: Filosofi Kopi</td><td class="p-2">2020</td><td class="p-2"><span class="bg-red-100 text-red-800 px-1.5 py-0.5 rounded font-bold">Age</span> <span class="bg-red-100 text-red-800 px-1.5 py-0.5 rounded font-bold">RT</span></td><td class="p-2 text-2xs text-gray-500 font-mono">Netflix:1 | Hulu:0 | Prime:0 | Disney:0</td></tr>
+                                    <tr><td class="p-2 font-mono font-bold text-amber-900">3,692</td><td class="p-2 font-mono">3,690</td><td class="p-2 font-mono">3691</td><td class="p-2 font-semibold">Thomas & Friends: Marvelous Machinery...</td><td class="p-2">2020</td><td class="p-2"><span class="bg-red-100 text-red-800 px-1.5 py-0.5 rounded font-bold">Age</span> <span class="bg-red-100 text-red-800 px-1.5 py-0.5 rounded font-bold">RT</span></td><td class="p-2 text-2xs text-gray-500 font-mono">Netflix:1 | Hulu:0 | Prime:0 | Disney:0</td></tr>
+                                    <tr><td class="p-2 font-mono font-bold text-amber-900">3,693</td><td class="p-2 font-mono">3,691</td><td class="p-2 font-mono">3692</td><td class="p-2 font-semibold">ChuChuTV Bedtime Stories & Moral Stories...</td><td class="p-2">2019</td><td class="p-2"><span class="bg-red-100 text-red-800 px-1.5 py-0.5 rounded font-bold">Age</span> <span class="bg-red-100 text-red-800 px-1.5 py-0.5 rounded font-bold">RT</span></td><td class="p-2 text-2xs text-gray-500 font-mono">Netflix:1 | Hulu:0 | Prime:0 | Disney:0</td></tr>
+                                    <tr><td class="p-2 font-mono font-bold text-amber-900">3,694</td><td class="p-2 font-mono">3,692</td><td class="p-2 font-mono">3693</td><td class="p-2 font-semibold">Fifty Year Old Teenager</td><td class="p-2">1996</td><td class="p-2"><span class="bg-red-100 text-red-800 px-1.5 py-0.5 rounded font-bold">Age</span> <span class="bg-red-100 text-red-800 px-1.5 py-0.5 rounded font-bold">RT</span></td><td class="p-2 text-2xs text-gray-500 font-mono">Netflix:1 | Hulu:0 | Prime:0 | Disney:0</td></tr>
+                                    <tr><td class="p-2 font-mono font-bold text-amber-900">3,695</td><td class="p-2 font-mono">3,693</td><td class="p-2 font-mono">3694</td><td class="p-2 font-semibold">Alias JJ, la celebridad del mal</td><td class="p-2">2017</td><td class="p-2"><span class="bg-red-100 text-red-800 px-1.5 py-0.5 rounded font-bold">Age</span> <span class="bg-red-100 text-red-800 px-1.5 py-0.5 rounded font-bold">RT</span></td><td class="p-2 text-2xs text-gray-500 font-mono">Netflix:1 | Hulu:0 | Prime:0 | Disney:0</td></tr>
+                                    <tr><td class="p-2 font-mono font-bold text-amber-900">3,696</td><td class="p-2 font-mono">3,694</td><td class="p-2 font-mono">3695</td><td class="p-2 font-semibold">The Vendor</td><td class="p-2">2018</td><td class="p-2"><span class="bg-red-100 text-red-800 px-1.5 py-0.5 rounded font-bold">Age</span> <span class="bg-red-100 text-red-800 px-1.5 py-0.5 rounded font-bold">RT</span></td><td class="p-2 text-2xs text-gray-500 font-mono">Netflix:1 | Hulu:0 | Prime:0 | Disney:0</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Search and Filters Bar -->
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-4 flex flex-wrap items-center justify-between gap-3 text-xs">
+                        <div class="flex flex-wrap items-center gap-3 flex-grow">
+                            <!-- Search -->
+                            <div class="relative min-w-[240px] flex-grow md:flex-grow-0">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                </span>
+                                <input type="text" id="missing-table-search" oninput="filterMissingRecords()" placeholder="Search title, ID, or row..." class="w-full pl-9 pr-3 py-2 bg-white border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            </div>
+
+                            <!-- Column Filter -->
+                            <div class="flex items-center gap-1.5">
+                                <label for="filter-col" class="text-gray-500 font-semibold">Column:</label>
+                                <select id="filter-col" onchange="filterMissingRecords()" class="bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium">
+                                    <option value="ALL">All Columns (4,184)</option>
+                                    <option value="Age">Age Demographic (4,177)</option>
+                                    <option value="Rotten Tomatoes">Rotten Tomatoes (7)</option>
+                                </select>
+                            </div>
+
+                            <!-- Value Type Filter -->
+                            <div class="flex items-center gap-1.5">
+                                <label for="filter-type" class="text-gray-500 font-semibold">Value Type:</label>
+                                <select id="filter-type" onchange="filterMissingRecords()" class="bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium">
+                                    <option value="ALL">All Detected Types</option>
+                                    <option value="Empty String / Blank">Empty String / Blank (4,184)</option>
+                                </select>
+                            </div>
+
+                            <!-- Status Filter -->
+                            <div class="flex items-center gap-1.5">
+                                <label for="filter-status" class="text-gray-500 font-semibold">Status:</label>
+                                <select id="filter-status" onchange="filterMissingRecords()" class="bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium">
+                                    <option value="ALL">All Statuses</option>
+                                    <option value="Pending">Pending</option>
+                                    <option value="Fixed">Fixed</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Rows Per Page -->
+                        <div class="flex items-center gap-2 text-gray-500">
+                            <span>Per page:</span>
+                            <select id="missing-table-per-page" onchange="changePerPage()" class="bg-white border border-gray-300 rounded-lg px-2 py-1 text-xs font-medium">
+                                <option value="10">10</option>
+                                <option value="25" selected>25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Searchable & Sortable Missing Data Table -->
+                    <div class="border border-gray-200 rounded-xl overflow-hidden shadow-xs mb-3 bg-white">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 text-xs">
+                                <thead class="bg-gray-100/70 text-gray-700 font-bold select-none">
+                                    <tr>
+                                        <th onclick="sortMissingTable('rowNum')" class="px-4 py-3 text-left cursor-pointer hover:bg-gray-200/60 transition-colors">
+                                            <div class="flex items-center gap-1">Row Number <span id="sort-icon-rowNum" class="text-gray-400">↕</span></div>
+                                        </th>
+                                        <th onclick="sortMissingTable('recId')" class="px-4 py-3 text-left cursor-pointer hover:bg-gray-200/60 transition-colors">
+                                            <div class="flex items-center gap-1">Record ID <span id="sort-icon-recId" class="text-gray-400">↕</span></div>
+                                        </th>
+                                        <th onclick="sortMissingTable('title')" class="px-4 py-3 text-left cursor-pointer hover:bg-gray-200/60 transition-colors">
+                                            <div class="flex items-center gap-1">Movie Title & Year <span id="sort-icon-title" class="text-gray-400">↕</span></div>
+                                        </th>
+                                        <th onclick="sortMissingTable('col')" class="px-4 py-3 text-left cursor-pointer hover:bg-gray-200/60 transition-colors">
+                                            <div class="flex items-center gap-1">Column Name <span id="sort-icon-col" class="text-gray-400">↕</span></div>
+                                        </th>
+                                        <th class="px-4 py-3 text-left">Missing Value Type</th>
+                                        <th class="px-4 py-3 text-left">Original Value</th>
+                                        <th class="px-4 py-3 text-left">Recommended Fix</th>
+                                        <th onclick="sortMissingTable('status')" class="px-4 py-3 text-left cursor-pointer hover:bg-gray-200/60 transition-colors">
+                                            <div class="flex items-center gap-1">Cleaning Status <span id="sort-icon-status" class="text-gray-400">↕</span></div>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="missing-table-body" class="divide-y divide-gray-100 bg-white">
+                                    <!-- Rendered dynamically by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Pagination Controls -->
+                    <div class="flex flex-wrap items-center justify-between text-xs text-gray-500 gap-2">
+                        <div id="missing-table-info">Showing records 1 to 25 of 4,184</div>
+                        <div class="flex items-center gap-1" id="missing-pagination-controls">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================== -->
+                <!-- 5. Column-wise Missing Data Details            -->
+                <!-- ============================================== -->
+                <div id="section-5" class="mb-10 pt-2">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center font-bold">5</span>
+                            Column-wise Missing Data Details
+                        </h4>
+                        <span class="text-xs text-gray-500 font-medium">Complete audit of all 11 columns in dataset</span>
+                    </div>
+
+                    <div class="border border-gray-200 rounded-xl overflow-hidden shadow-xs mb-6">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 text-xs">
+                                <thead class="bg-gray-50 font-bold text-gray-700">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left">Column Name</th>
+                                        <th class="px-4 py-3 text-left">Data Type</th>
+                                        <th class="px-4 py-3 text-left">Missing Count & %</th>
+                                        <th class="px-4 py-3 text-left">Detected Missing Type</th>
+                                        <th class="px-4 py-3 text-left">Affected Row Range (Sample Row Numbers)</th>
+                                        <th class="px-4 py-3 text-left">Cleaning Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 bg-white" id="column-audit-body">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================== -->
+                <!-- 6. Recommended Data Cleaning Methods           -->
+                <!-- ============================================== -->
+                <div id="section-6" class="mb-10 pt-2">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center font-bold">6</span>
+                            Recommended Data Cleaning Methods & Statistical Justification
+                        </h4>
+                        <span class="text-xs text-indigo-700 bg-indigo-50 font-bold px-2 py-0.5 rounded">Methodology</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <!-- Method for Age -->
+                        <div class="bg-white border border-indigo-200 rounded-xl p-5 shadow-xs">
+                            <div class="flex items-center justify-between border-b border-gray-100 pb-2 mb-3">
+                                <h5 class="font-bold text-gray-900 text-sm flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                                    Column: Age (Categorical Variable)
+                                </h5>
+                                <span class="text-xs font-mono font-bold text-red-600">4,177 Missing (43.90%)</span>
+                            </div>
+                            <div class="space-y-3 text-xs text-gray-700">
+                                <p><strong>1. What is missing:</strong> Audience maturity rating labels (<code>all</code>, <code>7+</code>, <code>13+</code>, <code>16+</code>, <code>18+</code>).</p>
+                                <p><strong>2. Where it is missing:</strong> 4,177 movie rows across Prime Video (1,948), Netflix (1,797), Hulu (329), and Disney+ (197).</p>
+                                <p><strong>3. Why this cleaning method:</strong> Because 43.9% of movies lack an official MPAA certification, synthesizing artificial age ratings (such as mode imputation to 18+) would skew family demographics and falsely mark indie/family films. Imputing with an explicit <code>"Not Rated"</code> category preserves 100% of the sample without misrepresentation.</p>
+                                <p><strong>4. How it can be fixed:</strong> Map all empty/blank strings to <code>"Not Rated"</code> in data structures.</p>
+                                <p><strong>5. Expected Cleaned Value:</strong> <code>"Not Rated"</code></p>
+                            </div>
+                        </div>
+
+                        <!-- Method for Rotten Tomatoes -->
+                        <div class="bg-white border border-blue-200 rounded-xl p-5 shadow-xs">
+                            <div class="flex items-center justify-between border-b border-gray-100 pb-2 mb-3">
+                                <h5 class="font-bold text-gray-900 text-sm flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                                    Column: Rotten Tomatoes (Numerical Ratio)
+                                </h5>
+                                <span class="text-xs font-mono font-bold text-orange-600">7 Missing (0.07%)</span>
+                            </div>
+                            <div class="space-y-3 text-xs text-gray-700">
+                                <p><strong>1. What is missing:</strong> Aggregate critic score string formatted as <code>score/100</code>.</p>
+                                <p><strong>2. Where it is missing:</strong> Exactly 7 specific rows (Lines 3690–3696: stand-up comedy and digital kids stories).</p>
+                                <p><strong>3. Why this cleaning method:</strong> With only 7 out of 9,515 records missing (0.07%), median score imputation (<code>52/100</code>) is statistically robust. Median is preferred over mean (<code>53.5/100</code>) because it is resilient to extreme review outliers and preserves dataset rating distribution neutrality.</p>
+                                <p><strong>4. How it can be fixed:</strong> Impute the dataset median score <code>"52/100"</code>.</p>
+                                <p><strong>5. Expected Cleaned Value:</strong> <code>"52/100"</code> (Median) or <code>"53.5/100"</code> (Mean)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Comparison Table: Listwise Deletion vs Imputation -->
+                    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5">
+                        <h5 class="font-bold text-gray-900 text-sm mb-2">Strategy Comparison: Listwise Deletion vs. Recommended Imputation</h5>
+                        <p class="text-xs text-gray-500 mb-4">Trade-off analysis for college project grading and data science best practices:</p>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-xs text-left bg-white rounded-lg border border-gray-200">
+                                <thead class="bg-gray-100 text-gray-700 font-bold">
+                                    <tr>
+                                        <th class="p-3 border-b">Evaluation Criteria</th>
+                                        <th class="p-3 border-b text-amber-800 bg-amber-50">Method A: Listwise Deletion (Row Removal)</th>
+                                        <th class="p-3 border-b text-green-800 bg-green-50">Method B: Recommended Imputation (Preserve All)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 text-gray-700">
+                                    <tr>
+                                        <td class="p-3 font-semibold">Cleaned Dataset Size</td>
+                                        <td class="p-3 bg-amber-50/40 font-mono text-red-600">5,338 Movies (drops 4,177 rows / 43.9%)</td>
+                                        <td class="p-3 bg-green-50/40 font-mono text-green-700 font-bold">9,515 Movies (retains 100% of dataset)</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3 font-semibold">Information Loss</td>
+                                        <td class="p-3 bg-amber-50/40 text-red-600">Severe: Discards 1,948 Prime Video and 1,797 Netflix titles</td>
+                                        <td class="p-3 bg-green-50/40 text-green-700">Zero: Retains all titles, release years, and platforms</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3 font-semibold">Statistical Integrity</td>
+                                        <td class="p-3 bg-amber-50/40">100% verified non-null records; no synthesized numbers</td>
+                                        <td class="p-3 bg-green-50/40">High: Category explicit "Not Rated", RT uses robust median (52)</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3 font-semibold">Dashboard Suitability</td>
+                                        <td class="p-3 bg-amber-50/40">Used in strict charts where age segmentation is required</td>
+                                        <td class="p-3 bg-green-50/40">Recommended for comprehensive streaming platform market analysis</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================== -->
+                <!-- 7. Before-and-After Cleaning Preview           -->
+                <!-- ============================================== -->
+                <div id="section-7" class="mb-10 pt-2">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center font-bold">7</span>
+                            Before-and-After Cleaning Preview
+                        </h4>
+                        <span class="text-xs text-gray-500 font-medium">Side-by-side comparison of affected rows</span>
+                    </div>
+
+                    <!-- Comparison Table -->
+                    <div class="border border-gray-200 rounded-xl overflow-hidden shadow-xs mb-6 bg-white">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 text-xs">
+                                <thead class="bg-gray-100 text-gray-700 font-bold">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left">Record / Title</th>
+                                        <th class="px-4 py-3 text-left">Field</th>
+                                        <th class="px-4 py-3 text-left text-red-700 bg-red-50/60">Original Missing Value</th>
+                                        <th class="px-4 py-3 text-left text-green-700 bg-green-50/60">Proposed Replacement</th>
+                                        <th class="px-4 py-3 text-left">Cleaning Method</th>
+                                        <th class="px-4 py-3 text-left">Reason / Rationale</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100" id="preview-comparison-body">
+                                    <tr>
+                                        <td class="px-4 py-3 font-semibold text-gray-900">#15: On Body and Soul (2017)</td>
+                                        <td class="px-4 py-3 font-mono font-bold text-indigo-700">Age</td>
+                                        <td class="px-4 py-3 bg-red-50/40 text-red-600 font-mono"><span class="line-through">— (Empty String)</span></td>
+                                        <td class="px-4 py-3 bg-green-50/40 font-bold text-green-700 font-mono">"Not Rated"</td>
+                                        <td class="px-4 py-3 text-gray-600">Explicit Imputation</td>
+                                        <td class="px-4 py-3 text-gray-500">Uncertified foreign indie film; preserves record in catalog.</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-4 py-3 font-semibold text-gray-900">#52: Special 26 (2013)</td>
+                                        <td class="px-4 py-3 font-mono font-bold text-indigo-700">Age</td>
+                                        <td class="px-4 py-3 bg-red-50/40 text-red-600 font-mono"><span class="line-through">— (Empty String)</span></td>
+                                        <td class="px-4 py-3 bg-green-50/40 font-bold text-green-700 font-mono">"Not Rated"</td>
+                                        <td class="px-4 py-3 text-gray-600">Explicit Imputation</td>
+                                        <td class="px-4 py-3 text-gray-500">International Indian release; avoids false standard rating.</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-4 py-3 font-semibold text-gray-900">#3689: Amit Tandon: Family Tandoncies (2019)</td>
+                                        <td class="px-4 py-3 font-mono font-bold text-indigo-700">Rotten Tomatoes</td>
+                                        <td class="px-4 py-3 bg-red-50/40 text-red-600 font-mono"><span class="line-through">— (Empty String)</span></td>
+                                        <td class="px-4 py-3 bg-green-50/40 font-bold text-green-700 font-mono">"52/100"</td>
+                                        <td class="px-4 py-3 text-gray-600">Median Imputation</td>
+                                        <td class="px-4 py-3 text-gray-500">Stand-up special with no critic consensus; uses dataset median score.</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-4 py-3 font-semibold text-gray-900">#3689: Amit Tandon: Family Tandoncies (2019)</td>
+                                        <td class="px-4 py-3 font-mono font-bold text-indigo-700">Age</td>
+                                        <td class="px-4 py-3 bg-red-50/40 text-red-600 font-mono"><span class="line-through">— (Empty String)</span></td>
+                                        <td class="px-4 py-3 bg-green-50/40 font-bold text-green-700 font-mono">"Not Rated"</td>
+                                        <td class="px-4 py-3 text-gray-600">Explicit Imputation</td>
+                                        <td class="px-4 py-3 text-gray-500">No MPAA certificate available for comedy special.</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-4 py-3 font-semibold text-gray-900">#3692: ChuChuTV Bedtime Stories (2019)</td>
+                                        <td class="px-4 py-3 font-mono font-bold text-indigo-700">Rotten Tomatoes</td>
+                                        <td class="px-4 py-3 bg-red-50/40 text-red-600 font-mono"><span class="line-through">— (Empty String)</span></td>
+                                        <td class="px-4 py-3 bg-green-50/40 font-bold text-green-700 font-mono">"52/100"</td>
+                                        <td class="px-4 py-3 text-gray-600">Median Imputation</td>
+                                        <td class="px-4 py-3 text-gray-500">Direct-to-digital nursery content unreviewed by film critics.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================== -->
+                <!-- 8. Cleaning Actions and Final Status           -->
+                <!-- ============================================== -->
+                <div id="section-8" class="mb-4 pt-2">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center font-bold">8</span>
+                            Interactive Cleaning Actions and Final Status
+                        </h4>
+                        <span class="text-xs text-gray-500 font-medium">Execute, verify, or rollback cleaning operations</span>
+                    </div>
+
+                    <!-- Action Bar -->
+                    <div class="bg-gray-900 text-white p-6 rounded-2xl shadow-lg border border-gray-800 flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <h5 class="text-base font-bold flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-green-400 animate-pulse"></span>
+                                Cleaning Operation Controller
+                            </h5>
+                            <p class="text-xs text-gray-400 mt-1">Applying cleaning normalizes 4,184 missing cells in memory, updates table badges, and adjusts dataset metrics.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button id="btn-preview-clean" onclick="previewCleaningAction()" class="bg-indigo-700 hover:bg-indigo-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow transition-all cursor-pointer border border-indigo-500 flex items-center gap-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                <span>Preview Cleaning</span>
+                            </button>
+                            <button id="btn-apply-clean" onclick="applyCleaningAction()" class="bg-green-600 hover:bg-green-500 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer border border-green-400 flex items-center gap-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                                <span>Apply Cleaning</span>
+                            </button>
+                            <button id="btn-reset-clean" onclick="resetCleaningAction()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white px-4 py-2.5 rounded-xl font-bold text-xs border border-gray-700 transition-all cursor-pointer flex items-center gap-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                <span>Reset Changes</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Status Banner -->
+                    <div id="cleaning-status-banner" class="mt-4 p-4 rounded-xl bg-gray-50 border border-gray-200 text-xs flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span id="status-indicator-dot" class="w-3 h-3 rounded-full bg-amber-500"></span>
+                            <span id="status-banner-text" class="text-gray-700 font-semibold">Current State: Original Raw Dataset Loaded (4,184 missing cells pending normalization).</span>
+                        </div>
+                        <span id="status-banner-badge" class="font-bold font-mono px-2.5 py-1 rounded bg-amber-100 text-amber-800">STATUS: PENDING</span>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -47,23 +753,55 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             <!-- Left Column: World Map -->
-            <div class="lg:col-span-2 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
-                <div class="p-4 border-b border-gray-100 mb-2">
-                    <h2 class="text-xl font-bold text-gray-800">Interactive World Map</h2>
-                    <p class="text-sm text-gray-500 mt-1">Click on any country to view data for that location.</p>
+            <div class="lg:col-span-2 bg-gray-900 p-2 rounded-xl shadow-xl border border-gray-800">
+                <div class="p-4 border-b border-gray-800 mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <span>Orbital Satellite World Map</span>
+                            <span class="bg-cyan-900/60 text-cyan-300 border border-cyan-500/30 text-xs px-2 py-0.5 rounded-full font-medium">Satellite View</span>
+                        </h2>
+                        <p class="text-sm text-cyan-200/80 mt-1">Photorealistic satellite imagery. Click on any country, island dot, or Antarctica to view data.</p>
+                    </div>
+                    <button onclick="updateLocationStats('Antarctica (South Pole & Research Stations)')" class="bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/50 hover:border-cyan-400 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer">
+                        <span>❄️ Antarctica Details</span>
+                    </button>
                 </div>
                 <div id="map"></div>
             </div>
 
             <!-- Right Column: Location Data Tags -->
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
-                <h2 class="text-xl font-bold text-gray-800 border-b border-gray-100 pb-4 mb-4">Location Statistics</h2>
+                <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">Location Statistics</h2>
+                    <button id="reset-loc-btn" onclick="updateLocationStats('Global')" class="hidden text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-md font-semibold border border-indigo-200 transition-all cursor-pointer">
+                        ↺ Reset to Global
+                    </button>
+                </div>
                 
-                <p class="text-sm text-gray-500 mb-6">Selected Location: <br>
-                    <strong id="selected-location" class="text-indigo-600 text-2xl mt-1 block">None (Click on map)</strong>
-                </p>
+                <div class="mb-4">
+                    <span class="text-xs uppercase tracking-wider text-gray-400 font-bold block">Selected Location</span>
+                    <strong id="selected-location" class="text-indigo-600 text-2xl mt-0.5 block">None (Click on map)</strong>
+                    <span id="selected-count-badge" class="hidden inline-block text-xs font-semibold px-2.5 py-0.5 rounded-full mt-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        0 Movies Available
+                    </span>
+                </div>
                 
+                <!-- Notice when no data is available for country -->
+                <div id="no-data-notice" class="hidden flex-col items-center justify-center p-6 bg-amber-50 border border-amber-200 rounded-lg text-center text-amber-800 my-auto">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-amber-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <p class="font-bold text-sm">No data available for the selected country.</p>
+                    <p class="text-xs text-amber-600 mt-1">There are no movie catalog records originating from this country in the streaming dataset.</p>
+                </div>
+
                 <div id="data-tags" class="hidden flex-col gap-6">
+                    <!-- Total Movies Tag -->
+                    <div>
+                        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Catalog Size</h3>
+                        <span id="tag-total-catalog" class="tag tag-blue font-bold">Total: 9,515 Movies</span>
+                    </div>
+
                     <!-- Age Demographics -->
                     <div>
                         <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Demographics</h3>
@@ -77,7 +815,6 @@
                         <span id="tag-prime" class="tag" style="background:#cce5ff; color:#0066cc; border: 1px solid #99ccff;">Prime Video: 4,113</span>
                         <span id="tag-hulu" class="tag" style="background:#ccffcc; color:#009933; border: 1px solid #99ff99;">Hulu: 1,047</span>
                         <span id="tag-disney" class="tag" style="background:#cce0ff; color:#004080; border: 1px solid #99c2ff;">Disney+: 922</span>
-                        <span class="tag tag-gray">Hotstar: N/A</span>
                     </div>
 
                     <!-- Ratings -->
@@ -88,86 +825,700 @@
 
                     <!-- Genres -->
                     <div>
-                        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Top Genres</h3>
-                        <span id="tag-genre1" class="tag tag-gray">Action: Data Missing</span>
-                        <span id="tag-genre2" class="tag tag-gray">Animation: Data Missing</span>
-                        <span id="tag-genre3" class="tag tag-gray">Cartoon: Data Missing</span>
+                        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Top Genres (From Dataset)</h3>
+                        <span id="tag-genre1" class="tag tag-blue">Drama: 0</span>
+                        <span id="tag-genre2" class="tag tag-green">Comedy: 0</span>
+                        <span id="tag-genre3" class="tag tag-yellow">Action: 0</span>
                     </div>
                 </div>
 
                 <div id="placeholder" class="flex-grow flex items-center justify-center p-8 border-2 border-dashed border-gray-200 rounded-lg text-gray-400 text-center mt-4">
-                    Select a country on the world map to populate data tags.
+                    Select a country or glowing island dot on the world map to populate data tags.
                 </div>
             </div>
+        </div>
+
+        <!-- Graphs Data Section -->
+        <div class="mt-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex flex-wrap items-center justify-between border-b border-gray-100 pb-3 mb-4 gap-2">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">Graphs Data Analysis</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Dynamically synchronized with globe country selection: <span id="graphs-active-country" class="font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">All Countries (Global Overview)</span></p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="graphs-reset-btn" onclick="updateLocationStats('Global')" class="hidden text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg font-medium transition-all border border-gray-300 cursor-pointer">
+                        ↺ Reset to Global (All Countries)
+                    </button>
+                </div>
+            </div>
+            <iframe id="graphs-iframe" src="all_graphs.html" width="100%" height="960px" style="border:none; border-radius: 0.5rem;" title="Graphs Data"></iframe>
         </div>
     </div>
 
     <script>
-        // Initialize Leaflet Map
-        var map = L.map('map').setView([20, 0], 2);
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
-            maxZoom: 16
-        }).addTo(map);
+        // Small dot-sized islands & polar research stations
+        const islandDots = [
+            // Antarctica & Polar Stations
+            { name: 'Antarctica (Amundsen-Scott South Pole Station)', lat: -85.0, lng: 0.0, isPolar: true },
+            { name: 'Antarctica (McMurdo Research Station)', lat: -77.8419, lng: 166.6863, isPolar: true },
+            { name: 'Antarctica (Palmer Station)', lat: -64.7742, lng: -64.0531, isPolar: true },
+            { name: 'Antarctica (Vostok Research Station)', lat: -78.4644, lng: 106.8373, isPolar: true },
+            { name: 'Antarctica (Esperanza Base)', lat: -63.3967, lng: -56.9978, isPolar: true },
+
+            // Pacific Ocean
+            { name: 'Fiji', lat: -17.7134, lng: 178.0650 },
+            { name: 'Hawaii', lat: 19.8968, lng: -155.5828 },
+            { name: 'Samoa', lat: -13.7590, lng: -172.1046 },
+            { name: 'American Samoa', lat: -14.2710, lng: -170.1322 },
+            { name: 'Tonga', lat: -21.1789, lng: -175.1982 },
+            { name: 'Tahiti (French Polynesia)', lat: -17.6797, lng: -149.4068 },
+            { name: 'Cook Islands', lat: -21.2367, lng: -159.7777 },
+            { name: 'Kiribati', lat: 1.8709, lng: -157.3631 },
+            { name: 'Micronesia', lat: 7.4256, lng: 150.5508 },
+            { name: 'Marshall Islands', lat: 7.1315, lng: 171.1845 },
+            { name: 'Palau', lat: 7.5150, lng: 134.5825 },
+            { name: 'Tuvalu', lat: -7.1095, lng: 177.6493 },
+            { name: 'Nauru', lat: -0.5228, lng: 166.9315 },
+            { name: 'Vanuatu', lat: -15.3767, lng: 166.9592 },
+            { name: 'Solomon Islands', lat: -9.6457, lng: 160.1562 },
+            { name: 'Guam', lat: 13.4443, lng: 144.7937 },
+            { name: 'Northern Mariana Islands', lat: 15.0979, lng: 145.6739 },
+            { name: 'New Caledonia', lat: -20.9043, lng: 165.6180 },
+            { name: 'Galapagos Islands', lat: -0.9538, lng: -90.9656 },
+            { name: 'Easter Island', lat: -27.1127, lng: -109.3497 },
+
+            // Indian Ocean
+            { name: 'Maldives', lat: 3.2028, lng: 73.2207 },
+            { name: 'Seychelles', lat: -4.6796, lng: 55.4920 },
+            { name: 'Mauritius', lat: -20.3484, lng: 57.5522 },
+            { name: 'Réunion', lat: -21.1151, lng: 55.5364 },
+            { name: 'Comoros', lat: -11.6455, lng: 43.3333 },
+            { name: 'Mayotte', lat: -12.8275, lng: 45.1662 },
+            { name: 'Zanzibar', lat: -6.1659, lng: 39.2026 },
+            { name: 'Andaman & Nicobar', lat: 11.7401, lng: 92.6586 },
+            { name: 'Lakshadweep', lat: 10.5667, lng: 72.6417 },
+            { name: 'Christmas Island', lat: -10.4475, lng: 105.6904 },
+            { name: 'Cocos (Keeling) Islands', lat: -12.1642, lng: 96.8710 },
+
+            // Caribbean & Atlantic Ocean
+            { name: 'Bermuda', lat: 32.3078, lng: -64.7505 },
+            { name: 'Bahamas', lat: 25.0343, lng: -77.3963 },
+            { name: 'Barbados', lat: 13.1939, lng: -59.5432 },
+            { name: 'Saint Lucia', lat: 13.9094, lng: -60.9789 },
+            { name: 'Grenada', lat: 12.1165, lng: -61.6790 },
+            { name: 'Antigua and Barbuda', lat: 17.0608, lng: -61.7964 },
+            { name: 'Saint Vincent', lat: 13.2528, lng: -61.1971 },
+            { name: 'Saint Kitts and Nevis', lat: 17.3578, lng: -62.7830 },
+            { name: 'Dominica', lat: 15.4150, lng: -61.3710 },
+            { name: 'Trinidad and Tobago', lat: 10.6918, lng: -61.2225 },
+            { name: 'Cayman Islands', lat: 19.3133, lng: -81.2546 },
+            { name: 'Aruba', lat: 12.5211, lng: -69.9683 },
+            { name: 'Curaçao', lat: 12.1696, lng: -68.9900 },
+            { name: 'Turks and Caicos', lat: 21.6940, lng: -71.7979 },
+            { name: 'Virgin Islands', lat: 18.3358, lng: -64.8963 },
+            { name: 'Cape Verde', lat: 16.5388, lng: -23.0418 },
+            { name: 'São Tomé & Príncipe', lat: 0.1864, lng: 6.6131 },
+            { name: 'Azores', lat: 37.7412, lng: -25.6756 },
+            { name: 'Madeira', lat: 32.7607, lng: -16.9595 },
+            { name: 'Canary Islands', lat: 28.2916, lng: -16.6291 },
+            { name: 'Ascension Island', lat: -7.9467, lng: -14.3559 },
+            { name: 'Saint Helena', lat: -15.9650, lng: -5.7089 },
+            { name: 'Falkland Islands', lat: -51.7963, lng: -59.5236 },
+            { name: 'Faroe Islands', lat: 61.8926, lng: -6.9118 },
+
+            // Mediterranean & Asia
+            { name: 'Malta', lat: 35.9375, lng: 14.3754 },
+            { name: 'Cyprus', lat: 35.1264, lng: 33.4299 },
+            { name: 'Singapore', lat: 1.3521, lng: 103.8198 },
+            { name: 'Bahrain', lat: 26.0667, lng: 50.5577 }
+        ];
+
+        function resolveCountry(name) {
+            if (!name) return null;
+            let clean = name.trim();
+            if (clean.toLowerCase().includes('antarctica')) {
+                return 'Antarctica';
+            }
+            const lower = clean.toLowerCase();
+            if (window.COUNTRY_SYNONYMS && window.COUNTRY_SYNONYMS[lower]) {
+                return window.COUNTRY_SYNONYMS[lower];
+            }
+            if (clean.includes('(')) {
+                let inside = clean.split('(')[1].replace(')', '').trim().toLowerCase();
+                if (window.COUNTRY_SYNONYMS && window.COUNTRY_SYNONYMS[inside]) {
+                    return window.COUNTRY_SYNONYMS[inside];
+                }
+                let before = clean.split('(')[0].trim().toLowerCase();
+                if (window.COUNTRY_SYNONYMS && window.COUNTRY_SYNONYMS[before]) {
+                    return window.COUNTRY_SYNONYMS[before];
+                }
+            }
+            return clean;
+        }
+
+        function updateLocationStats(locationName, notifyIframe = true) {
+            const isGlobal = !locationName || locationName === 'Global' || locationName === 'All' || locationName.toLowerCase().includes('all countries');
+            const resolvedCountry = isGlobal ? null : resolveCountry(locationName);
+            const displayName = isGlobal ? 'All Countries (Global Overview)' : (resolvedCountry || locationName);
+            
+            // Update selected location UI
+            const locElem = document.getElementById('selected-location');
+            if (locElem) locElem.innerText = displayName;
+
+            const graphsCountryElem = document.getElementById('graphs-active-country');
+            if (graphsCountryElem) graphsCountryElem.innerText = displayName;
+
+            const resetLocBtn = document.getElementById('reset-loc-btn');
+            if (resetLocBtn) {
+                if (isGlobal) resetLocBtn.classList.add('hidden');
+                else resetLocBtn.classList.remove('hidden');
+            }
+
+            const graphsResetBtn = document.getElementById('graphs-reset-btn');
+            if (graphsResetBtn) {
+                if (isGlobal) graphsResetBtn.classList.add('hidden');
+                else graphsResetBtn.classList.remove('hidden');
+            }
+
+            const placeholder = document.getElementById('placeholder');
+            if (placeholder) placeholder.style.display = 'none';
+
+            const tags = document.getElementById('data-tags');
+            const noDataNotice = document.getElementById('no-data-notice');
+            const countBadge = document.getElementById('selected-count-badge');
+
+            // Filter actual movies from dataset
+            let records = [];
+            if (isGlobal) {
+                records = window.MOVIES_DATA || [];
+            } else if (window.MOVIES_DATA && resolvedCountry) {
+                const targetLower = resolvedCountry.toLowerCase();
+                records = window.MOVIES_DATA.filter(m => 
+                    m.countries && m.countries.some(c => {
+                        const cLow = c.toLowerCase();
+                        if (cLow === targetLower) return true;
+                        if (window.COUNTRY_SYNONYMS && window.COUNTRY_SYNONYMS[targetLower] === c) return true;
+                        return false;
+                    })
+                );
+            }
+
+            if (!isGlobal && records.length === 0) {
+                // Clear state when no records found for selected country
+                if (tags) {
+                    tags.style.display = 'none';
+                    tags.classList.add('hidden');
+                }
+                if (noDataNotice) {
+                    noDataNotice.style.display = 'flex';
+                    noDataNotice.classList.remove('hidden');
+                }
+                if (countBadge) {
+                    countBadge.innerText = '0 Movies in Dataset';
+                    countBadge.className = 'inline-block text-xs font-semibold px-2.5 py-0.5 rounded-full mt-1.5 bg-red-50 text-red-700 border border-red-200';
+                    countBadge.classList.remove('hidden');
+                }
+            } else {
+                if (noDataNotice) {
+                    noDataNotice.style.display = 'none';
+                    noDataNotice.classList.add('hidden');
+                }
+                if (tags) {
+                    tags.style.display = 'flex';
+                    tags.classList.remove('hidden');
+                }
+                if (countBadge) {
+                    countBadge.innerText = `${records.length.toLocaleString()} Movies Available`;
+                    countBadge.className = 'inline-block text-xs font-semibold px-2.5 py-0.5 rounded-full mt-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200';
+                    countBadge.classList.remove('hidden');
+                }
+
+                const total = records.length;
+                
+                // Total Catalog
+                const tagTotal = document.getElementById('tag-total-catalog');
+                if (tagTotal) tagTotal.innerText = `Total: ${total.toLocaleString()} Movies`;
+
+                // 18+ Movies Demographics
+                const count18 = records.filter(m => m.age === '18+').length;
+                const pct18 = total > 0 ? ((count18 / total) * 100).toFixed(1) : '0.0';
+                const tagAge = document.getElementById('tag-age');
+                if (tagAge) tagAge.innerText = `18+ Movies: ${pct18}% (${count18.toLocaleString()})`;
+
+                // Platforms
+                const nf = records.filter(m => m.netflix === 1).length;
+                const pv = records.filter(m => m.prime === 1).length;
+                const hulu = records.filter(m => m.hulu === 1).length;
+                const disney = records.filter(m => m.disney === 1).length;
+
+                const tagNf = document.getElementById('tag-netflix');
+                if (tagNf) tagNf.innerText = `Netflix: ${nf.toLocaleString()}`;
+                const tagPv = document.getElementById('tag-prime');
+                if (tagPv) tagPv.innerText = `Prime Video: ${pv.toLocaleString()}`;
+                const tagHulu = document.getElementById('tag-hulu');
+                if (tagHulu) tagHulu.innerText = `Hulu: ${hulu.toLocaleString()}`;
+                const tagDisney = document.getElementById('tag-disney');
+                if (tagDisney) tagDisney.innerText = `Disney+: ${disney.toLocaleString()}`;
+
+                // Quality & Ratings
+                const rated = records.filter(m => m.rating !== null && m.rating !== undefined);
+                const avgRating = rated.length > 0 
+                    ? (rated.reduce((sum, m) => sum + m.rating, 0) / rated.length).toFixed(1) 
+                    : 'N/A';
+                const tagRating = document.getElementById('tag-rating');
+                if (tagRating) tagRating.innerText = `Average Rating: ${avgRating} / 100 (${rated.length.toLocaleString()} rated)`;
+
+                // Top Genres (actual from dataset!)
+                const genreCounts = {};
+                records.forEach(m => {
+                    if (m.genres) {
+                        m.genres.forEach(g => {
+                            genreCounts[g] = (genreCounts[g] || 0) + 1;
+                        });
+                    }
+                });
+                const sortedGenres = Object.entries(genreCounts).sort((a,b) => b[1] - a[1]);
+
+                const tagG1 = document.getElementById('tag-genre1');
+                const tagG2 = document.getElementById('tag-genre2');
+                const tagG3 = document.getElementById('tag-genre3');
+
+                if (tagG1) {
+                    tagG1.innerText = sortedGenres[0] ? `${sortedGenres[0][0]}: ${sortedGenres[0][1].toLocaleString()}` : 'Genre 1: N/A';
+                    tagG1.className = sortedGenres[0] ? 'tag tag-blue' : 'tag tag-gray';
+                }
+                if (tagG2) {
+                    tagG2.innerText = sortedGenres[1] ? `${sortedGenres[1][0]}: ${sortedGenres[1][1].toLocaleString()}` : 'Genre 2: N/A';
+                    tagG2.className = sortedGenres[1] ? 'tag tag-green' : 'tag tag-gray';
+                }
+                if (tagG3) {
+                    tagG3.innerText = sortedGenres[2] ? `${sortedGenres[2][0]}: ${sortedGenres[2][1].toLocaleString()}` : 'Genre 3: N/A';
+                    tagG3.className = sortedGenres[2] ? 'tag tag-yellow' : 'tag tag-gray';
+                }
+            }
+
+            // Sync with iframe
+            if (notifyIframe) {
+                const iframe = document.getElementById('graphs-iframe');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({
+                        action: 'setCountry',
+                        country: isGlobal ? 'ALL' : resolvedCountry
+                    }, '*');
+                }
+            }
+        }
+
+        // Listen for messages from iframe if user changes country inside graphs
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.action === 'countrySelectedInGraphs') {
+                updateLocationStats(event.data.country, false);
+            }
+        });
 
         // Fetch GeoJSON for world countries
         fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
             .then(response => response.json())
             .then(data => {
-                L.geoJson(data, {
-                    style: {
-                        color: '#6366f1',
-                        weight: 1,
-                        fillColor: '#a5b4fc',
-                        fillOpacity: 0.3
-                    },
-                    onEachFeature: function (feature, layer) {
-                        // Add hover effect
-                        layer.on('mouseover', function () {
-                            this.setStyle({ fillOpacity: 0.6 });
-                        });
-                        layer.on('mouseout', function () {
-                            this.setStyle({ fillOpacity: 0.3 });
-                        });
-                        
-                        // Add click event to update dashboard
-                        layer.on('click', function (e) {
-                            const countryName = feature.properties.name;
-                            document.getElementById('selected-location').innerText = countryName;
-                            document.getElementById('placeholder').style.display = 'none';
-                            const tags = document.getElementById('data-tags');
-                            tags.style.display = 'flex';
-                            tags.classList.remove('hidden');
-                            
-                            // Generate deterministic random numbers based on country name
-                            let seed = 0;
-                            for (let i = 0; i < countryName.length; i++) seed += countryName.charCodeAt(i);
-                            
-                            const total = 1000 + (seed * 17) % 3000;
-                            const agePct = (15 + (seed % 15) + (seed % 5) * 0.1).toFixed(1);
-                            
-                            document.getElementById('tag-age').innerText = `18+ Movies: ${agePct}% (${Math.floor(total * agePct / 100)})`;
-                            document.getElementById('tag-netflix').innerText = `Netflix: ${Math.floor(total * 0.4 + (seed % 100))}`;
-                            document.getElementById('tag-prime').innerText = `Prime Video: ${Math.floor(total * 0.5 + (seed % 200))}`;
-                            document.getElementById('tag-hulu').innerText = `Hulu: ${Math.floor(total * 0.15 + (seed % 50))}`;
-                            document.getElementById('tag-disney').innerText = `Disney+: ${Math.floor(total * 0.1 + (seed % 30))}`;
-                            document.getElementById('tag-rating').innerText = `Average Rating: ${(45 + (seed % 30) + (seed % 10) * 0.1).toFixed(1)} / 100`;
-                            
-                            const genres = ['Action', 'Comedy', 'Drama', 'Horror', 'Sci-Fi', 'Romance', 'Documentary', 'Animation', 'Thriller'];
-                            document.getElementById('tag-genre1').innerText = genres[seed % genres.length] + ': ' + Math.floor(total * 0.3);
-                            document.getElementById('tag-genre2').innerText = genres[(seed + 3) % genres.length] + ': ' + Math.floor(total * 0.2);
-                            document.getElementById('tag-genre3').innerText = genres[(seed + 7) % genres.length] + ': ' + Math.floor(total * 0.1);
-                            
-                            // Optional: pan map to country
-                            map.flyToBounds(layer.getBounds(), { padding: [50, 50], maxZoom: 4, duration: 0.5 });
-                        });
-                        
-                        layer.bindTooltip(feature.properties.name, {
-                            className: 'font-semibold'
-                        });
-                    }
-                }).addTo(map);
+                const mapElement = document.getElementById('map');
+                
+                // Filter Antarctica (spans 360° causing cross-globe slicing chords; represented via polar stations & satellite ice sheet)
+                // and Bermuda (handled with island dots to prevent polygon winding artifacts)
+                const countries = data.features.filter(d => 
+                    d.properties.name !== 'Antarctica' && d.properties.name !== 'Bermuda'
+                );
+                
+                const globe = Globe()
+                    (mapElement)
+                    .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+                    .backgroundColor('#030712')
+                    .showAtmosphere(true)
+                    .atmosphereColor('#38bdf8')
+                    .atmosphereAltitude(0.2)
+                    .polygonsData(countries)
+                    .polygonAltitude(0.005)
+                    .polygonCapColor(() => 'rgba(0, 0, 0, 0)')
+                    .polygonSideColor(() => 'rgba(0, 0, 0, 0)')
+                    .polygonStrokeColor(() => 'rgba(147, 197, 253, 0.55)')
+                    .polygonLabel(({ properties: d }) => `
+                        <div style="background: rgba(17, 24, 39, 0.9); color: white; padding: 6px 10px; border-radius: 6px; font-weight: bold; border: 1px solid #38bdf8; font-family: sans-serif; box-shadow: 0 4px 6px rgba(0,0,0,0.3); backdrop-filter: blur(4px);">
+                            ${d.name}
+                        </div>
+                    `)
+                    .onPolygonHover(hoverD => {
+                        globe
+                            .polygonCapColor(d => d === hoverD ? 'rgba(56, 189, 248, 0.35)' : 'rgba(0, 0, 0, 0)')
+                            .polygonStrokeColor(d => d === hoverD ? '#38bdf8' : 'rgba(147, 197, 253, 0.55)');
+                        if (hoverD) {
+                            mapElement.style.cursor = 'pointer';
+                        } else {
+                            mapElement.style.cursor = 'default';
+                        }
+                    })
+                    .onPolygonClick(({ properties: featureProps }) => {
+                        updateLocationStats(featureProps.name);
+                    })
+                    // Dot-sized Island & Polar Research Station markers
+                    .pointsData(islandDots)
+                    .pointLat(d => d.lat)
+                    .pointLng(d => d.lng)
+                    .pointColor(d => d.isPolar ? '#f0f9ff' : '#38bdf8')
+                    .pointAltitude(0.015)
+                    .pointRadius(d => d.isPolar ? 0.5 : 0.38)
+                    .pointResolution(16)
+                    .pointLabel(d => `
+                        <div style="background: rgba(17, 24, 39, 0.95); color: ${d.isPolar ? '#f0f9ff' : '#38bdf8'}; padding: 6px 12px; border-radius: 6px; font-weight: bold; border: 1px solid ${d.isPolar ? '#93c5fd' : '#38bdf8'}; font-family: sans-serif; box-shadow: 0 4px 6px rgba(0,0,0,0.3); backdrop-filter: blur(4px);">
+                            ${d.isPolar ? '❄️ ' + d.name : '🏝️ ' + d.name} <span style="font-size: 0.75rem; color: #94a3b8; font-weight: normal;">${d.isPolar ? '(Polar Station)' : '(Island)'}</span>
+                        </div>
+                    `)
+                    .onPointHover(hoverD => {
+                        globe.pointColor(d => d === hoverD ? '#ffffff' : (d.isPolar ? '#f0f9ff' : '#38bdf8'));
+                        if (hoverD) {
+                            mapElement.style.cursor = 'pointer';
+                        } else {
+                            mapElement.style.cursor = 'default';
+                        }
+                    })
+                    .onPointClick(d => {
+                        updateLocationStats(d.name);
+                    });
+                    
+                // Auto-rotate the globe slowly
+                globe.controls().autoRotate = true;
+                globe.controls().autoRotateSpeed = 0.5;
+                globe.controls().enableZoom = true;
+                
+                // Adjust size to fit container
+                const resizeGlobe = () => {
+                   globe.width(mapElement.clientWidth);
+                   globe.height(mapElement.clientHeight);
+                };
+                window.addEventListener('resize', resizeGlobe);
+                setTimeout(resizeGlobe, 100);
+
+                // Initialize dashboard stats with Global overview
+                if (window.MOVIES_DATA) {
+                    updateLocationStats('Global', false);
+                }
             });
+
+        // Ensure iframe syncs when loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            const iframe = document.getElementById('graphs-iframe');
+            if (iframe) {
+                iframe.addEventListener('load', () => {
+                    const currentLoc = document.getElementById('selected-location')?.innerText;
+                    const isGlobal = !currentLoc || currentLoc.includes('None') || currentLoc.includes('Global');
+                    const country = isGlobal ? 'ALL' : resolveCountry(currentLoc);
+                    iframe.contentWindow.postMessage({ action: 'setCountry', country: country }, '*');
+                });
+            }
+        });
     </script>
+
+    <!-- Data Cleaning & Missing Values Report Controller -->
+    <script>
+        // State variables
+        let reportData = window.DATA_CLEANING_REPORT || null;
+        let filteredRecords = [];
+        let currentPage = 1;
+        let recordsPerPage = 25;
+        let sortColumn = 'rowNum';
+        let sortDirection = 'asc';
+        let isCleaningApplied = false;
+
+        function toggleMissingReport() {
+            const rep = document.getElementById('missing-values-report');
+            rep.classList.toggle('hidden');
+            if (!rep.classList.contains('hidden') && !window.reportInitialized) {
+                initMissingReport();
+                window.reportInitialized = true;
+            }
+        }
+
+        function initMissingReport() {
+            if (!window.DATA_CLEANING_REPORT) {
+                console.warn('DATA_CLEANING_REPORT not yet loaded.');
+                return;
+            }
+            reportData = JSON.parse(JSON.stringify(window.DATA_CLEANING_REPORT));
+            filteredRecords = [...reportData.missingRecords];
+            renderColumnAuditTable();
+            renderMissingTable();
+        }
+
+        function renderColumnAuditTable() {
+            const tbody = document.getElementById('column-audit-body');
+            if (!tbody || !reportData) return;
+            tbody.innerHTML = reportData.columnSummary.map(c => `
+                <tr class="${c.missingCount > 0 ? 'bg-red-50/20' : 'hover:bg-gray-50'}">
+                    <td class="px-4 py-3 font-bold text-gray-900">${c.name}</td>
+                    <td class="px-4 py-3 text-gray-600 font-mono">${c.dtype}</td>
+                    <td class="px-4 py-3">
+                        <span class="font-bold ${c.missingCount > 0 ? 'text-red-600' : 'text-green-600'}">
+                            ${c.missingCount.toLocaleString()}
+                        </span>
+                        <span class="text-2xs text-gray-500">(${c.missingPct.toFixed(2)}%)</span>
+                    </td>
+                    <td class="px-4 py-3 text-gray-600 font-mono">${c.missingType}</td>
+                    <td class="px-4 py-3">
+                        ${c.missingCount > 0 ? `
+                            <div class="text-2xs text-gray-700">
+                                <span>Lines: ${c.sampleRowNums.slice(0, 7).join(', ')}...</span>
+                                <span class="text-indigo-600 font-bold block mt-0.5">IDs: ${c.sampleRecordIds.slice(0, 7).join(', ')}...</span>
+                            </div>
+                        ` : '<span class="text-green-600 font-semibold">— No Missing Values</span>'}
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 rounded text-2xs font-bold ${c.missingCount > 0 ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}">
+                            ${c.recMethod}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterMissingRecords() {
+            if (!reportData) return;
+            const search = (document.getElementById('missing-table-search').value || '').toLowerCase().trim();
+            const col = document.getElementById('filter-col').value;
+            const type = document.getElementById('filter-type').value;
+            const status = document.getElementById('filter-status').value;
+
+            filteredRecords = reportData.missingRecords.filter(r => {
+                if (col !== 'ALL' && r.col !== col) return false;
+                if (type !== 'ALL' && r.type !== type) return false;
+                if (status !== 'ALL' && r.status !== status) return false;
+                if (search) {
+                    const match = r.title.toLowerCase().includes(search) || 
+                                  String(r.rowNum).includes(search) || 
+                                  String(r.recId).includes(search) ||
+                                  r.col.toLowerCase().includes(search);
+                    if (!match) return false;
+                }
+                return true;
+            });
+
+            currentPage = 1;
+            renderMissingTable();
+        }
+
+        function sortMissingTable(column) {
+            if (sortColumn === column) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortColumn = column;
+                sortDirection = 'asc';
+            }
+
+            // Update sort icon text
+            ['rowNum', 'recId', 'title', 'col', 'status'].forEach(c => {
+                const icon = document.getElementById('sort-icon-' + c);
+                if (icon) {
+                    if (c === sortColumn) {
+                        icon.innerText = sortDirection === 'asc' ? '▲' : '▼';
+                        icon.className = 'text-indigo-600 font-bold';
+                    } else {
+                        icon.innerText = '↕';
+                        icon.className = 'text-gray-400';
+                    }
+                }
+            });
+
+            filteredRecords.sort((a, b) => {
+                let vA = a[sortColumn];
+                let vB = b[sortColumn];
+                if (sortColumn === 'rowNum' || sortColumn === 'recId') {
+                    vA = Number(vA) || 0;
+                    vB = Number(vB) || 0;
+                } else {
+                    vA = String(vA).toLowerCase();
+                    vB = String(vB).toLowerCase();
+                }
+                if (vA < vB) return sortDirection === 'asc' ? -1 : 1;
+                if (vA > vB) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            renderMissingTable();
+        }
+
+        function changePerPage() {
+            recordsPerPage = parseInt(document.getElementById('missing-table-per-page').value) || 25;
+            currentPage = 1;
+            renderMissingTable();
+        }
+
+        function renderMissingTable() {
+            const tbody = document.getElementById('missing-table-body');
+            const info = document.getElementById('missing-table-info');
+            const pagination = document.getElementById('missing-pagination-controls');
+            if (!tbody) return;
+
+            const total = filteredRecords.length;
+            const totalPages = Math.ceil(total / recordsPerPage) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            const startIdx = (currentPage - 1) * recordsPerPage;
+            const endIdx = Math.min(startIdx + recordsPerPage, total);
+            const pageData = filteredRecords.slice(startIdx, endIdx);
+
+            info.innerText = total > 0 
+                ? `Showing records ${startIdx + 1} to ${endIdx} of ${total.toLocaleString()}`
+                : 'No matching missing records found.';
+
+            if (pageData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-gray-400 font-medium">No records match your filter criteria.</td></tr>`;
+            } else {
+                tbody.innerHTML = pageData.map(r => `
+                    <tr class="hover:bg-indigo-50/30 transition-colors">
+                        <td class="px-4 py-3 font-mono font-bold text-gray-900">${r.rowNum}</td>
+                        <td class="px-4 py-3 font-mono text-gray-600">${r.recId}</td>
+                        <td class="px-4 py-3 font-semibold text-gray-900">
+                            <div>${r.title}</div>
+                            <div class="text-2xs text-gray-400 font-normal">Release: ${r.year}</div>
+                        </td>
+                        <td class="px-4 py-3 font-bold ${r.col === 'Age' ? 'text-indigo-700' : 'text-orange-700'}">${r.col}</td>
+                        <td class="px-4 py-3 text-gray-500 font-mono text-2xs">${r.type}</td>
+                        <td class="px-4 py-3 text-red-600 font-mono font-bold">${r.orig}</td>
+                        <td class="px-4 py-3">
+                            <span class="text-2xs text-gray-700 font-medium block">${r.recFix}</span>
+                            <span class="text-2xs text-green-700 font-mono font-bold">Target: ${r.propVal}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2.5 py-1 rounded-full text-2xs font-bold ${
+                                r.status === 'Fixed' 
+                                    ? 'bg-green-100 text-green-800 border border-green-200' 
+                                    : (r.status === 'Preview' 
+                                        ? 'bg-blue-100 text-blue-800 border border-blue-200' 
+                                        : 'bg-amber-100 text-amber-800 border border-amber-200')
+                            }">
+                                ${r.status}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            // Render Pagination Buttons
+            let pageBtns = `
+                <button onclick="goToPage(1)" ${currentPage === 1 ? 'disabled class="px-2 py-1 bg-gray-100 text-gray-400 rounded cursor-not-allowed"' : 'class="px-2 py-1 bg-white border border-gray-200 hover:bg-gray-50 rounded font-medium"'}>&laquo;</button>
+                <button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled class="px-2 py-1 bg-gray-100 text-gray-400 rounded cursor-not-allowed"' : 'class="px-2 py-1 bg-white border border-gray-200 hover:bg-gray-50 rounded font-medium"'}>Prev</button>
+            `;
+
+            // Window of page numbers
+            const maxWindow = 5;
+            let startP = Math.max(1, currentPage - 2);
+            let endP = Math.min(totalPages, startP + maxWindow - 1);
+            if (endP - startP < maxWindow - 1) {
+                startP = Math.max(1, endP - maxWindow + 1);
+            }
+
+            for (let p = startP; p <= endP; p++) {
+                pageBtns += `
+                    <button onclick="goToPage(${p})" class="px-2.5 py-1 rounded font-medium ${p === currentPage ? 'bg-indigo-600 text-white font-bold' : 'bg-white border border-gray-200 hover:bg-gray-50 text-gray-700'}">${p}</button>
+                `;
+            }
+
+            pageBtns += `
+                <button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled class="px-2 py-1 bg-gray-100 text-gray-400 rounded cursor-not-allowed"' : 'class="px-2 py-1 bg-white border border-gray-200 hover:bg-gray-50 rounded font-medium"'}>Next</button>
+                <button onclick="goToPage(${totalPages})" ${currentPage === totalPages ? 'disabled class="px-2 py-1 bg-gray-100 text-gray-400 rounded cursor-not-allowed"' : 'class="px-2 py-1 bg-white border border-gray-200 hover:bg-gray-50 rounded font-medium"'}>&raquo;</button>
+            `;
+
+            pagination.innerHTML = pageBtns;
+        }
+
+        function goToPage(p) {
+            currentPage = p;
+            renderMissingTable();
+        }
+
+        function previewCleaningAction() {
+            if (!reportData) return;
+            reportData.missingRecords.forEach(r => {
+                r.status = 'Preview';
+            });
+            isCleaningApplied = false;
+            
+            // Update UI indicators
+            document.getElementById('kpi-cleaning-status').innerText = '100% (Preview)';
+            document.getElementById('kpi-cleaning-status').className = 'text-2xl font-black text-blue-600';
+            document.getElementById('kpi-cleaning-sub').innerText = 'Simulated: 4,184 Ready to Apply';
+            document.getElementById('progress-bar-fill').style.width = '100%';
+            document.getElementById('progress-bar-fill').className = 'bg-blue-500 h-3 rounded-full transition-all duration-500';
+            document.getElementById('progress-bar-text').innerText = 'Preview Mode: 4,184 Replacements Staged';
+
+            document.getElementById('status-indicator-dot').className = 'w-3 h-3 rounded-full bg-blue-500 animate-pulse';
+            document.getElementById('status-banner-text').innerText = 'Preview Mode Active: Reviewing proposed values ("Not Rated" for Age, "52/100" for RT). Click "Apply Cleaning" to commit.';
+            document.getElementById('status-banner-badge').className = 'font-bold font-mono px-2.5 py-1 rounded bg-blue-100 text-blue-800';
+            document.getElementById('status-banner-badge').innerText = 'STATUS: PREVIEWING';
+
+            filterMissingRecords();
+        }
+
+        function applyCleaningAction() {
+            if (!reportData) return;
+            reportData.missingRecords.forEach(r => {
+                r.status = 'Fixed';
+                r.orig = r.propVal;
+            });
+            isCleaningApplied = true;
+
+            // Update KPI metric cards
+            document.getElementById('kpi-missing-cells').innerText = '0';
+            document.getElementById('kpi-affected-rows').innerText = '0';
+            document.getElementById('kpi-cleaning-status').innerText = '100%';
+            document.getElementById('kpi-cleaning-status').className = 'text-2xl font-black text-green-600';
+            document.getElementById('kpi-cleaning-sub').innerText = 'All 4,184 Cells Successfully Cleaned';
+            document.getElementById('progress-bar-fill').style.width = '100%';
+            document.getElementById('progress-bar-fill').className = 'bg-green-600 h-3 rounded-full transition-all duration-500';
+            document.getElementById('progress-bar-text').innerText = 'Cleaned: 4,184 / 4,184 Cells Normalized (100%)';
+
+            document.getElementById('badge-missing-count').className = 'bg-green-500 text-white text-xs px-2.5 py-0.5 rounded-full font-bold shadow-sm';
+            document.getElementById('badge-missing-count').innerText = '0 Missing (Cleaned)';
+
+            document.getElementById('status-indicator-dot').className = 'w-3 h-3 rounded-full bg-green-500';
+            document.getElementById('status-banner-text').innerText = 'Cleaning Applied Successfully: 4,177 Age ratings standardized to "Not Rated", 7 Rotten Tomatoes scores imputed to median 52/100.';
+            document.getElementById('status-banner-badge').className = 'font-bold font-mono px-2.5 py-1 rounded bg-green-100 text-green-800';
+            document.getElementById('status-banner-badge').innerText = 'STATUS: CLEANED & FIXED';
+
+            filterMissingRecords();
+        }
+
+        function resetCleaningAction() {
+            if (!reportData) return;
+            // Reload original state from DATA_CLEANING_REPORT
+            reportData = JSON.parse(JSON.stringify(window.DATA_CLEANING_REPORT));
+            isCleaningApplied = false;
+
+            // Reset KPI metrics
+            document.getElementById('kpi-missing-cells').innerText = '4,184';
+            document.getElementById('kpi-affected-rows').innerText = '4,177';
+            document.getElementById('kpi-cleaning-status').innerText = '0%';
+            document.getElementById('kpi-cleaning-status').className = 'text-2xl font-black text-blue-600';
+            document.getElementById('kpi-cleaning-sub').innerText = '4,184 Pending fixes';
+            document.getElementById('progress-bar-fill').style.width = '0%';
+            document.getElementById('progress-bar-fill').className = 'bg-indigo-600 h-3 rounded-full transition-all duration-500';
+            document.getElementById('progress-bar-text').innerText = '0 / 4,184 Cells Cleaned (0%)';
+
+            document.getElementById('badge-missing-count').className = 'bg-red-500 text-white text-xs px-2.5 py-0.5 rounded-full font-bold shadow-sm';
+            document.getElementById('badge-missing-count').innerText = '4,184 Missing Cells';
+
+            document.getElementById('status-indicator-dot').className = 'w-3 h-3 rounded-full bg-amber-500';
+            document.getElementById('status-banner-text').innerText = 'Current State: Original Raw Dataset Loaded (4,184 missing cells pending normalization).';
+            document.getElementById('status-banner-badge').className = 'font-bold font-mono px-2.5 py-1 rounded bg-amber-100 text-amber-800';
+            document.getElementById('status-banner-badge').innerText = 'STATUS: PENDING';
+
+            filterMissingRecords();
+        }
+
+        // Initialize report once DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.DATA_CLEANING_REPORT) {
+                initMissingReport();
+            }
+        });
+    </script>
+
 </body>
 </html>

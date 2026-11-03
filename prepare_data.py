@@ -1,14 +1,10 @@
 import csv
 import json
-import random
-
-genres = ["Action", "Animation", "Sci-Fi", "Comedy", "Drama", "Horror", "Romance", "Documentary"]
 
 movies = []
-with open("MoviesOnStreamingPlatforms (4).csv", "r", encoding="utf-8") as f:
+with open("MoviesOnStreamingPlatforms_full.csv", "r", encoding="utf-8") as f:
     reader = csv.DictReader(f)
     for row in reader:
-        # Check for missing values in essential columns
         age = row.get("Age", "").strip()
         rating = row.get("Rotten Tomatoes", "").strip()
         
@@ -16,7 +12,6 @@ with open("MoviesOnStreamingPlatforms (4).csv", "r", encoding="utf-8") as f:
         if not age or not rating:
             continue
             
-        # Parse rating
         try:
             rating_val = float(rating.split('/')[0])
             if rating_val >= 80: rating_category = "High (80-100)"
@@ -25,7 +20,6 @@ with open("MoviesOnStreamingPlatforms (4).csv", "r", encoding="utf-8") as f:
         except:
             continue
             
-        # Parse platforms
         platforms = []
         for p in ["Netflix", "Hulu", "Prime Video", "Disney+"]:
             if row.get(p) == "1":
@@ -33,17 +27,26 @@ with open("MoviesOnStreamingPlatforms (4).csv", "r", encoding="utf-8") as f:
         
         if not platforms:
             continue
+
+        raw_g = row.get("Genres", "").strip()
+        genres = [g.strip() for g in raw_g.split(",") if g.strip()] if raw_g else ["Other"]
+
+        raw_c = row.get("Country", "").strip()
+        countries = [c.strip() for c in raw_c.split(",") if c.strip()] if raw_c else ["Unknown"]
             
         movie = {
             "title": row.get("Title", "Unknown"),
             "platforms": platforms,
             "age": age,
             "rating": rating_category,
-            "genre": random.choice(genres) # Mocked genre
+            "genre": genres[0] if genres else "Other",
+            "genres": genres,
+            "country": countries[0] if countries else "Unknown",
+            "countries": countries
         }
         movies.append(movie)
 
-with open("cleaned_movies.json", "w") as f:
+with open("cleaned_movies.json", "w", encoding="utf-8") as f:
     json.dump(movies, f)
 
-print(f"Cleaned and saved {len(movies)} movies.")
+print(f"Cleaned and saved {len(movies)} movies with authentic genres and countries.")
